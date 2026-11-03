@@ -1,3 +1,18 @@
+
+   name: CI
+   on: [push, pull_request]
+   jobs:
+     test:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v3
+         - name: Set up Python
+           uses: actions/setup-python@v4
+           with: { python-version: '3.12' }
+         - name: Install dependencies & Run tests
+           run: |
+             pip install pytest pytest-cov
+             pytest --cov=fin_logic_cyber_range --cov-fail-under=95
 # 金融业务逻辑靶场 · fin_logic_attack_range
 
 > 一句话：把静态推演说出来的"这条转账接口缺了 `Idempotency_Token`，所以能被重放、会重复扣款、会
