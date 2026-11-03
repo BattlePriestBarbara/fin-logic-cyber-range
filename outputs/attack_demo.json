@@ -1,0 +1,678 @@
+{
+  "generated_by": "scripts/attack_demo.py",
+  "scenario": {
+    "name": "attack_demo",
+    "title": "演示：重放 + 并发重试风暴 + 无签名注入",
+    "description": "演示脚本一次性打出三类业务逻辑攻击：同一指令超时重发、并发重试风暴、不带签名头的指令。三类都只依赖'网关没有校验'，不需要任何内存破坏技巧。",
+    "process": "Fund_Transfer_Process",
+    "target_api": "Transfer_API",
+    "control": "Idempotency_Token",
+    "endpoint": "/mock/v1/transfer",
+    "expect_vulnerable": "critical",
+    "expect_secure": "none",
+    "requests": 11,
+    "steps": [
+      {
+        "action": "transfer",
+        "instruction_id": "INS-ATK-9901",
+        "amount": "10.00",
+        "debit_account": "ACC-SYNTH-0001",
+        "credit_account": "ACC-SYNTH-0002",
+        "repeat": 1,
+        "workers": 4
+      },
+      {
+        "action": "transfer",
+        "instruction_id": "INS-ATK-9902",
+        "amount": "20.00",
+        "debit_account": "ACC-SYNTH-0001",
+        "credit_account": "ACC-SYNTH-0002",
+        "repeat": 3,
+        "workers": 4
+      },
+      {
+        "action": "concurrent_transfer",
+        "instruction_id": "INS-ATK-9903",
+        "amount": "50.00",
+        "debit_account": "ACC-SYNTH-0001",
+        "credit_account": "ACC-SYNTH-0002",
+        "repeat": 1,
+        "workers": 6
+      },
+      {
+        "action": "unsigned_transfer",
+        "instruction_id": "INS-ATK-9904",
+        "amount": "30.00",
+        "debit_account": "ACC-SYNTH-0001",
+        "credit_account": "ACC-SYNTH-0002",
+        "repeat": 1,
+        "workers": 4
+      }
+    ]
+  },
+  "workers": 6,
+  "window_ms": 20,
+  "vulnerable": {
+    "base_url": "http://127.0.0.1:18080",
+    "mode": "vulnerable",
+    "controls": {
+      "mode": "vulnerable",
+      "enforced": [],
+      "missing": [
+        "Idempotency_Token",
+        "Signature_Verification"
+      ]
+    },
+    "requests": 11,
+    "phases": {
+      "recon": [
+        {
+          "route": "/mock/v1/health",
+          "answer": {
+            "controls": {
+              "enforced": [],
+              "missing": [
+                "Idempotency_Token",
+                "Signature_Verification"
+              ],
+              "mode": "vulnerable"
+            },
+            "mode": "vulnerable",
+            "routes": [
+              "/mock/v1/health",
+              "/mock/v1/ledger",
+              "/mock/v1/transfer"
+            ],
+            "status": "ok"
+          }
+        },
+        {
+          "route": "/mock/v1/ledger",
+          "answer": {
+            "accepted_requests": 0,
+            "balances": {
+              "ACC-SYNTH-0001": "1000.00",
+              "ACC-SYNTH-0002": "0.00"
+            },
+            "controls": {
+              "enforced": [],
+              "missing": [
+                "Idempotency_Token",
+                "Signature_Verification"
+              ],
+              "mode": "vulnerable"
+            },
+            "duplicated_instructions": [],
+            "postings": []
+          }
+        }
+      ],
+      "baseline": [
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0001",
+          "posting_id": "PST-0001",
+          "error": ""
+        }
+      ],
+      "replay": [
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0002",
+          "posting_id": "PST-0002",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0003",
+          "posting_id": "PST-0003",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0004",
+          "posting_id": "PST-0004",
+          "error": ""
+        }
+      ],
+      "race": [
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0007",
+          "posting_id": "PST-0007",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0005",
+          "posting_id": "PST-0005",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0008",
+          "posting_id": "PST-0008",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0009",
+          "posting_id": "PST-0009",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0006",
+          "posting_id": "PST-0006",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0010",
+          "posting_id": "PST-0010",
+          "error": ""
+        }
+      ],
+      "unsigned": [
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0011",
+          "posting_id": "PST-0011",
+          "error": ""
+        }
+      ]
+    },
+    "ledger_after": {
+      "accepted_requests": 11,
+      "balances": {
+        "ACC-SYNTH-0001": "600.00",
+        "ACC-SYNTH-0002": "400.00"
+      },
+      "controls": {
+        "enforced": [],
+        "missing": [
+          "Idempotency_Token",
+          "Signature_Verification"
+        ],
+        "mode": "vulnerable"
+      },
+      "duplicated_instructions": [
+        "INS-ATK-9902",
+        "INS-ATK-9903"
+      ],
+      "postings": [
+        {
+          "amount": "10.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9901",
+          "posting_id": "PST-0001",
+          "receipt_id": "RCP-0001",
+          "sequence": 1
+        },
+        {
+          "amount": "20.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9902",
+          "posting_id": "PST-0002",
+          "receipt_id": "RCP-0002",
+          "sequence": 2
+        },
+        {
+          "amount": "20.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9902",
+          "posting_id": "PST-0003",
+          "receipt_id": "RCP-0003",
+          "sequence": 3
+        },
+        {
+          "amount": "20.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9902",
+          "posting_id": "PST-0004",
+          "receipt_id": "RCP-0004",
+          "sequence": 4
+        },
+        {
+          "amount": "50.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9903",
+          "posting_id": "PST-0005",
+          "receipt_id": "RCP-0005",
+          "sequence": 5
+        },
+        {
+          "amount": "50.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9903",
+          "posting_id": "PST-0006",
+          "receipt_id": "RCP-0006",
+          "sequence": 6
+        },
+        {
+          "amount": "50.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9903",
+          "posting_id": "PST-0007",
+          "receipt_id": "RCP-0007",
+          "sequence": 7
+        },
+        {
+          "amount": "50.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9903",
+          "posting_id": "PST-0008",
+          "receipt_id": "RCP-0008",
+          "sequence": 8
+        },
+        {
+          "amount": "50.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9903",
+          "posting_id": "PST-0009",
+          "receipt_id": "RCP-0009",
+          "sequence": 9
+        },
+        {
+          "amount": "50.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9903",
+          "posting_id": "PST-0010",
+          "receipt_id": "RCP-0010",
+          "sequence": 10
+        },
+        {
+          "amount": "30.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9904",
+          "posting_id": "PST-0011",
+          "receipt_id": "RCP-0011",
+          "sequence": 11
+        }
+      ]
+    },
+    "assessment": {
+      "scenario": "attack_demo",
+      "mode": "vulnerable",
+      "target_api": "Transfer_API",
+      "process": "Fund_Transfer_Process",
+      "risk": "critical",
+      "expected": "critical",
+      "passed": true,
+      "requests": 11,
+      "controls_missing": [
+        "Idempotency_Token",
+        "Signature_Verification"
+      ],
+      "flaws": [
+        "Duplicate_Debit",
+        "Replay_Attack",
+        "Race_Condition",
+        "Unsigned_Instruction_Accepted"
+      ],
+      "ontology_gaps": [
+        "Unsigned_Instruction_Accepted"
+      ],
+      "gaps": [
+        {
+          "control": "Idempotency_Token",
+          "required": true,
+          "required_by": [
+            "Fund_Transfer_Process"
+          ],
+          "derived": [
+            "Replay_Attack",
+            "Duplicate_Debit",
+            "Race_Condition"
+          ],
+          "remediation": "增加唯一请求 ID 校验"
+        },
+        {
+          "control": "Signature_Verification",
+          "required": true,
+          "required_by": [
+            "Fund_Transfer_Process"
+          ],
+          "derived": [
+            "Unsigned_Instruction_Accepted"
+          ],
+          "remediation": "补齐签名校验"
+        }
+      ],
+      "findings": [
+        {
+          "target_api": "Transfer_API",
+          "control": "Idempotency_Token",
+          "vulnerability": "Duplicate_Debit",
+          "required_by": [
+            "Fund_Transfer_Process"
+          ],
+          "clauses": [
+            "Financial_Security_Level_3"
+          ],
+          "remediation": "增加唯一请求 ID 校验",
+          "sentence": "检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Duplicate_Debit 风险，违反 Financial_Security_Level_3，建议增加唯一请求 ID 校验。"
+        },
+        {
+          "target_api": "Transfer_API",
+          "control": "Idempotency_Token",
+          "vulnerability": "Race_Condition",
+          "required_by": [
+            "Fund_Transfer_Process"
+          ],
+          "clauses": [
+            "JR_T_0185_API_Spec"
+          ],
+          "remediation": "增加唯一请求 ID 校验",
+          "sentence": "检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Race_Condition 风险，违反 JR_T_0185_API_Spec，建议增加唯一请求 ID 校验。"
+        },
+        {
+          "target_api": "Transfer_API",
+          "control": "Idempotency_Token",
+          "vulnerability": "Replay_Attack",
+          "required_by": [
+            "Fund_Transfer_Process"
+          ],
+          "clauses": [
+            "Financial_Security_Level_3"
+          ],
+          "remediation": "增加唯一请求 ID 校验",
+          "sentence": "检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Replay_Attack 风险，违反 Financial_Security_Level_3，建议增加唯一请求 ID 校验。"
+        },
+        {
+          "target_api": "Transfer_API",
+          "control": "Signature_Verification",
+          "vulnerability": "Unsigned_Instruction_Accepted",
+          "required_by": [
+            "Fund_Transfer_Process"
+          ],
+          "clauses": [],
+          "remediation": "补齐签名校验",
+          "sentence": "检测到 Transfer_API 缺失 Signature_Verification，推导出存在 Unsigned_Instruction_Accepted 风险，违反 未映射的合规条款，建议补齐签名校验。"
+        }
+      ],
+      "evidence": [
+        "指令 INS-ATK-9902 产生 3 条分录：PST-0002 记 20.00（回执 RCP-0002）; PST-0003 记 20.00（回执 RCP-0003）; PST-0004 记 20.00（回执 RCP-0004）",
+        "指令 INS-ATK-9903 产生 6 条分录：PST-0005 记 50.00（回执 RCP-0005）; PST-0006 记 50.00（回执 RCP-0006）; PST-0007 记 50.00（回执 RCP-0007）; PST-0008 记 50.00（回执 RCP-0008）; PST-0009 记 50.00（回执 RCP-0009）; PST-0010 记 50.00（回执 RCP-0010）",
+        "请求 #11 未携带签名头仍被受理并落账"
+      ]
+    }
+  },
+  "secure": {
+    "base_url": "http://127.0.0.1:18081",
+    "mode": "secure",
+    "controls": {
+      "mode": "secure",
+      "enforced": [
+        "Idempotency_Token",
+        "Signature_Verification"
+      ],
+      "missing": []
+    },
+    "requests": 11,
+    "phases": {
+      "recon": [
+        {
+          "route": "/mock/v1/health",
+          "answer": {
+            "controls": {
+              "enforced": [
+                "Idempotency_Token",
+                "Signature_Verification"
+              ],
+              "missing": [],
+              "mode": "secure"
+            },
+            "mode": "secure",
+            "routes": [
+              "/mock/v1/health",
+              "/mock/v1/ledger",
+              "/mock/v1/transfer"
+            ],
+            "status": "ok"
+          }
+        },
+        {
+          "route": "/mock/v1/ledger",
+          "answer": {
+            "accepted_requests": 0,
+            "balances": {
+              "ACC-SYNTH-0001": "1000.00",
+              "ACC-SYNTH-0002": "0.00"
+            },
+            "controls": {
+              "enforced": [
+                "Idempotency_Token",
+                "Signature_Verification"
+              ],
+              "missing": [],
+              "mode": "secure"
+            },
+            "duplicated_instructions": [],
+            "postings": []
+          }
+        }
+      ],
+      "baseline": [
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0001",
+          "posting_id": "PST-0001",
+          "error": ""
+        }
+      ],
+      "replay": [
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0002",
+          "posting_id": "PST-0002",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": true,
+          "receipt_id": "RCP-0002",
+          "posting_id": "",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": true,
+          "receipt_id": "RCP-0002",
+          "posting_id": "",
+          "error": ""
+        }
+      ],
+      "race": [
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": true,
+          "receipt_id": "RCP-0003",
+          "posting_id": "",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": true,
+          "receipt_id": "RCP-0003",
+          "posting_id": "",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": true,
+          "receipt_id": "RCP-0003",
+          "posting_id": "",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": false,
+          "receipt_id": "RCP-0003",
+          "posting_id": "PST-0003",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": true,
+          "receipt_id": "RCP-0003",
+          "posting_id": "",
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "replayed": true,
+          "receipt_id": "RCP-0003",
+          "posting_id": "",
+          "error": ""
+        }
+      ],
+      "unsigned": [
+        {
+          "status": 401,
+          "accepted": false,
+          "replayed": false,
+          "receipt_id": "",
+          "posting_id": "",
+          "error": "signature_rejected"
+        }
+      ]
+    },
+    "ledger_after": {
+      "accepted_requests": 3,
+      "balances": {
+        "ACC-SYNTH-0001": "920.00",
+        "ACC-SYNTH-0002": "80.00"
+      },
+      "controls": {
+        "enforced": [
+          "Idempotency_Token",
+          "Signature_Verification"
+        ],
+        "missing": [],
+        "mode": "secure"
+      },
+      "duplicated_instructions": [],
+      "postings": [
+        {
+          "amount": "10.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9901",
+          "posting_id": "PST-0001",
+          "receipt_id": "RCP-0001",
+          "sequence": 1
+        },
+        {
+          "amount": "20.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9902",
+          "posting_id": "PST-0002",
+          "receipt_id": "RCP-0002",
+          "sequence": 2
+        },
+        {
+          "amount": "50.00",
+          "credit_account": "ACC-SYNTH-0002",
+          "debit_account": "ACC-SYNTH-0001",
+          "instruction_id": "INS-ATK-9903",
+          "posting_id": "PST-0003",
+          "receipt_id": "RCP-0003",
+          "sequence": 3
+        }
+      ]
+    },
+    "assessment": {
+      "scenario": "attack_demo",
+      "mode": "secure",
+      "target_api": "Transfer_API",
+      "process": "Fund_Transfer_Process",
+      "risk": "none",
+      "expected": "none",
+      "passed": true,
+      "requests": 11,
+      "controls_missing": [],
+      "flaws": [],
+      "ontology_gaps": [],
+      "gaps": [],
+      "findings": [],
+      "evidence": []
+    }
+  },
+  "checks": [
+    {
+      "name": "vulnerable 出现重复分录（INS-ATK-9902,INS-ATK-9903）",
+      "passed": true
+    },
+    {
+      "name": "vulnerable 接受无签名请求",
+      "passed": true
+    },
+    {
+      "name": "vulnerable 判定 == 预期 critical",
+      "passed": true
+    },
+    {
+      "name": "secure 没有重复分录",
+      "passed": true
+    },
+    {
+      "name": "secure 拒绝无签名请求",
+      "passed": true
+    },
+    {
+      "name": "secure 用回执挡住重放（2 次 replayed）",
+      "passed": true
+    },
+    {
+      "name": "secure 判定 == 预期 none",
+      "passed": true
+    }
+  ]
+}

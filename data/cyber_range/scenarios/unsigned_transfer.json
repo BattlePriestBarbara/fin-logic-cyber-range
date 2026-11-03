@@ -1,0 +1,18 @@
+{
+  "name": "unsigned_transfer",
+  "title": "缺少签名头的转账请求仍被受理",
+  "description": "请求连签名头都没带，服务端也没有校验签名就直接受理并落账。这条剧本用来验证第二个控制：它对金额、并发都不敏感，只问“一个字段都没签的报文能不能把账划走”。",
+  "process": "Fund_Transfer_Process",
+  "target_api": "Transfer_API",
+  "control": "Signature_Verification",
+  "endpoint": "/mock/v1/transfer",
+  "expect_vulnerable": "medium",
+  "expect_secure": "none",
+  "steps": [
+    {
+      "action": "unsigned_transfer",
+      "instruction_id": "INS-C0000003",
+      "amount": "50.00"
+    }
+  ]
+}

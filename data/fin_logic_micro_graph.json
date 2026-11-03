@@ -1,0 +1,131 @@
+{
+  "nodes": [
+    {
+      "name": "Transfer_API",
+      "definition": "Fund-transfer route: accepts a debit instruction from the mobile channel, posts it to the core ledger and returns a receipt.",
+      "category": "api_endpoint",
+      "aliases": ["转账接口", "/api/v1/transfer"]
+    },
+    {
+      "name": "Fund_Transfer_Process",
+      "definition": "The business process a transfer must complete exactly once: authorise, debit, credit, notify and reconcile against one instruction id.",
+      "category": "business_process",
+      "aliases": ["转账业务", "fund transfer"]
+    },
+    {
+      "name": "Idempotency_Token",
+      "definition": "A client-supplied unique request id the server remembers for a TTL window, so a retried or replayed instruction executes once.",
+      "category": "security_control",
+      "aliases": ["唯一请求 ID", "幂等令牌"]
+    },
+    {
+      "name": "Signature_Verification",
+      "definition": "A per-request signature over the business fields, checked server-side before the instruction is accepted.",
+      "category": "security_control",
+      "aliases": ["签名校验"]
+    },
+    {
+      "name": "Replay_Attack",
+      "definition": "A captured instruction is re-sent unchanged and accepted a second time, because nothing marks the request as already seen.",
+      "category": "vulnerability",
+      "aliases": ["重放攻击"]
+    },
+    {
+      "name": "Duplicate_Debit",
+      "definition": "One customer intent produces two ledger postings: a timeout resend or a double tap debits the account twice.",
+      "category": "vulnerability",
+      "aliases": ["重复扣款"]
+    },
+    {
+      "name": "Race_Condition",
+      "definition": "Two concurrent submissions both read 'not yet processed' and both post, so the balance check passes twice.",
+      "category": "vulnerability",
+      "aliases": ["并发竞争"]
+    },
+    {
+      "name": "Financial_Security_Level_3",
+      "definition": "GB/T 22239 level-3 transaction-integrity clause: a funds instruction must execute once, and its acceptance must be traceable.",
+      "category": "compliance_rule",
+      "aliases": ["等保三级"]
+    },
+    {
+      "name": "JR_T_0185_API_Spec",
+      "definition": "JR/T 0185-2020 commercial-bank API security spec: a fund-moving API must resist replay and guarantee idempotency per instruction.",
+      "category": "compliance_rule",
+      "aliases": ["商业银行应用程序接口安全管理规范"]
+    }
+  ],
+  "edges": [
+    {
+      "source_concept": "Transfer_API",
+      "target_concept": "Fund_Transfer_Process",
+      "relation_type": "IMPLEMENTS",
+      "confidence_score": 0.95,
+      "evidence": "Hand-authored benchmark: the route exists to serve exactly one process, and the process is what carries the 'exactly once' requirement."
+    },
+    {
+      "source_concept": "Fund_Transfer_Process",
+      "target_concept": "Idempotency_Token",
+      "relation_type": "REQUIRES_CONTROL",
+      "confidence_score": 0.95,
+      "evidence": "Hand-authored benchmark: 'exactly once' is unreachable without a request identity the server can deduplicate on."
+    },
+    {
+      "source_concept": "Fund_Transfer_Process",
+      "target_concept": "Signature_Verification",
+      "relation_type": "REQUIRES_CONTROL",
+      "confidence_score": 0.9,
+      "evidence": "Hand-authored benchmark: the second required control - present on the route, so the reasoner must not fire on it."
+    },
+    {
+      "source_concept": "Transfer_API",
+      "target_concept": "Idempotency_Token",
+      "relation_type": "LACKS_CONTROL",
+      "confidence_score": 0.9,
+      "evidence": "Hand-authored benchmark: the review finding - the handler has no request-id table and no TTL window."
+    },
+    {
+      "source_concept": "Idempotency_Token",
+      "target_concept": "Replay_Attack",
+      "relation_type": "LEADS_TO_VULNERABILITY",
+      "confidence_score": 0.9,
+      "evidence": "Hand-authored benchmark: read as 'the absence of this control permits this flaw' - the reasoner only crosses it when the control is missing."
+    },
+    {
+      "source_concept": "Idempotency_Token",
+      "target_concept": "Duplicate_Debit",
+      "relation_type": "LEADS_TO_VULNERABILITY",
+      "confidence_score": 0.85,
+      "evidence": "Hand-authored benchmark: a retried timeout has no dedupe key, so the ledger posts twice."
+    },
+    {
+      "source_concept": "Idempotency_Token",
+      "target_concept": "Race_Condition",
+      "relation_type": "LEADS_TO_VULNERABILITY",
+      "confidence_score": 0.8,
+      "evidence": "Hand-authored benchmark: without a unique key the two concurrent posts cannot be serialised or collapsed."
+    },
+    {
+      "source_concept": "Replay_Attack",
+      "target_concept": "Financial_Security_Level_3",
+      "relation_type": "VIOLATES",
+      "confidence_score": 0.9,
+      "evidence": "Hand-authored benchmark: level 3 requires one execution per instruction; a replayed instruction executes twice."
+    },
+    {
+      "source_concept": "Duplicate_Debit",
+      "target_concept": "Financial_Security_Level_3",
+      "relation_type": "VIOLATES",
+      "confidence_score": 0.9,
+      "evidence": "Hand-authored benchmark: a second posting breaks the same transaction-integrity clause."
+    },
+    {
+      "source_concept": "Race_Condition",
+      "target_concept": "JR_T_0185_API_Spec",
+      "relation_type": "VIOLATES",
+      "confidence_score": 0.8,
+      "evidence": "Hand-authored benchmark: the spec asks a fund-moving API to be idempotent per instruction; a race is the failure to be."
+    }
+  ],
+  "chunk_ids": ["fin-logic-micro-graph#hand-authored"]
+}

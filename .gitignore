@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------------------
+# fin_logic_attack_range —— 入库策略：
+#   源码 / 测试 / 剧本 / 基准图 / 部署配置 / 报告成稿 / **本轮运行的证据** 入库；
+#   其余运行产物（临时 JSON、docx 中间件、缓存、覆盖率）不入库。
+# ---------------------------------------------------------------------------
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# --- 覆盖率 / 测试中间产物 ---
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+_verify/
+
+# --- 报告生成的中间件（.docx 是 .doc 的来源，可随时重生成）---
+*.docx
+~$*.doc
+
+# --- 证据目录：整体忽略，只放行本轮真实运行的那几个文件 ---
+outputs/*
+!outputs/attack_demo.json
+!outputs/cyber_range_report.json
+!outputs/cyber_range_report.md
+logs/*
+!logs/_demo_run2.txt
+
+# --- 其它 ---
+*.tmp
+*.log
+Thumbs.db
+desktop.ini
+.DS_Store

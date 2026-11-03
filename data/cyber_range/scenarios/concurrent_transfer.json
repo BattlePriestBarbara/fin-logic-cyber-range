@@ -1,0 +1,19 @@
+{
+  "name": "concurrent_transfer",
+  "title": "双击 / 重试风暴下同一指令并发提交",
+  "description": "同一笔指令在极短时间内被并发提交多次（双击、弱网重试、脚本误触都会造成）。缺失幂等令牌时，两个线程都读到“还没处理过”，于是都落账，余额校验也会通过两次。",
+  "process": "Fund_Transfer_Process",
+  "target_api": "Transfer_API",
+  "control": "Idempotency_Token",
+  "endpoint": "/mock/v1/transfer",
+  "expect_vulnerable": "critical",
+  "expect_secure": "none",
+  "steps": [
+    {
+      "action": "concurrent_transfer",
+      "instruction_id": "INS-B0000002",
+      "amount": "100.00",
+      "workers": 8
+    }
+  ]
+}

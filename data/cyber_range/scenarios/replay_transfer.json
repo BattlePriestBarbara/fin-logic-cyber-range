@@ -1,0 +1,19 @@
+{
+  "name": "replay_transfer",
+  "title": "同一笔转账指令被原样重放两次",
+  "description": "客户端在超时后按原样重发同一笔转账指令。业务语义上这笔钱只能扣一次，但两次请求字节完全相同、都格式合法：只要服务端没有记住指令号，库上就会记两笔。",
+  "process": "Fund_Transfer_Process",
+  "target_api": "Transfer_API",
+  "control": "Idempotency_Token",
+  "endpoint": "/mock/v1/transfer",
+  "expect_vulnerable": "high",
+  "expect_secure": "none",
+  "steps": [
+    {
+      "action": "transfer",
+      "instruction_id": "INS-A0000001",
+      "amount": "100.00",
+      "repeat": 2
+    }
+  ]
+}

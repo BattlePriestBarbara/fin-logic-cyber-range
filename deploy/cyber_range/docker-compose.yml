@@ -1,0 +1,63 @@
+# 合成金融业务逻辑靶场（阶段 11）—— 可选容器化部署
+#
+# 边界，与 fin_logic_cyber_range/README.md 第 1 节逐条对应：
+#   * 两个服务只挂在自定义的 `range` 网络上，`internal: true` 表示没有外网出网；
+#   * 宿主端口只绑定 127.0.0.1，同一局域网内的其它主机访问不到；
+#   * 所有账户、金额、指令号都是合成值（ACC-SYNTH-*），没有真实数据；
+#   * `docker compose down -v` 即可把实验状态清零（本来也只在内存里）。
+#
+# 说明：编写本文件的机器上没有安装 Docker，所以这条路径是"配置已交付、未在本机
+# 实跑"；日常验证请用进程内 mock：`python -m fin_logic_cyber_range`（同样只走
+# 127.0.0.1，见 fin_logic_cyber_range/README.md 第 6 节）。
+name: fin-logic-range
+
+services:
+  mock-gateway:
+    build: .
+    image: fin-logic-range:0.1.0
+    command:
+      ["python", "-m", "fin_logic_cyber_range.serve", "--mode", "vulnerable", "--port", "8080"]
+    ports:
+      - "127.0.0.1:18080:8080"
+    networks: [range]
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    pids_limit: 128
+    restart: "no"
+    healthcheck:
+      test:
+        ["CMD", "python", "-c",
+         "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/mock/v1/health',timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  mock-secure-gateway:
+    build: .
+    image: fin-logic-range:0.1.0
+    command:
+      ["python", "-m", "fin_logic_cyber_range.serve", "--mode", "secure", "--port", "8080"]
+    ports:
+      - "127.0.0.1:18081:8080"
+    networks: [range]
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    pids_limit: 128
+    restart: "no"
+    healthcheck:
+      test:
+        ["CMD", "python", "-c",
+         "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/mock/v1/health',timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+networks:
+  range:
+    internal: true

@@ -1,0 +1,6 @@
+# 统一换行，避免 Windows 上 checkout 出来的 .py 被改成 CRLF
+* text=auto eol=lf
+
+# 二进制资产：不要让 git 尝试做行尾转换/文本 diff
+*.doc   binary
+*.docx  binary

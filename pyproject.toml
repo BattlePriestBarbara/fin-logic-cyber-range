@@ -1,0 +1,57 @@
+# fin_logic_attack_range —— 元数据 + 测试配置。
+# 本仓库不需要构建后端也能跑（把仓库根加入 sys.path 即可）；
+# [build-system] 只是为了让 `pip install -e .` 也能工作。
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fin-logic-attack-range"
+version = "0.1.0"
+description = "本地合成金融业务逻辑靶场：把静态推演出的\"缺控制 -> 出后果\"放到回环网络里复现一次"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Elrond" }]
+keywords = ["cyber-range", "business-logic", "financial-api", "ontology", "defensive-security"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+]
+dependencies = [
+    "pydantic>=2.0",
+    "networkx>=3.0",
+]
+
+[project.optional-dependencies]
+# 只有生成 Word 报告需要它；跑靶场与测试不需要。
+report = ["python-docx>=1.1"]
+
+[project.scripts]
+fin-logic-range = "fin_logic_cyber_range.cli:main"
+
+[tool.setuptools]
+packages = [
+    "fin_logic_cyber_range",
+    "fin_logic_risk",
+    "ontology_builder",
+    "ontology_builder.core",
+    "ontology_builder.ontology",
+]
+
+[tool.black]
+# 与上游工作区一致：行宽 100（black 默认 88 会把上游文件整体重排，
+# 那样就破坏了「上游代码原样保留」这个前提）。
+line-length = 100
+target-version = ["py310"]
+
+[tool.pytest.ini_options]
+# 只跑本仓库能自洽的那一半：靶场的 115 个测试。
+# 上游工作区里 fin_logic_risk 的测试会 import 另外两个领域（re_toolbox / fin_security），
+# 那两个领域不在本仓库里，所以这里不收集。
+testpaths = ["fin_logic_cyber_range"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]

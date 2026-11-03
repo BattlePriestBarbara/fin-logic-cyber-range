@@ -1,0 +1,145 @@
+﻿==============================================================================
+FIN LOGIC CYBER RANGE · 攻击演示（合成数据 / 仅回环 / 无持久化）
+==============================================================================
+  [0] 边界自检
+      目标白名单 : 127.0.0.1, ::1, localhost, mock-gateway, mock-secure-gateway
+      绑定地址   : 127.0.0.1（未放宽）
+      子进程     : 无 shell / 无 subprocess / 无注册表 / 无服务 / 无计划任务
+      磁盘写入   : D:\fin_logic_attack_range\outputs\attack_demo.json
+      请求预算   : 11 个 POST/臂（workers=6 + 5），不重试、不循环
+
+  攻击计划：
+      transfer             INS-ATK-9901          10.00 x1  signed=True  (sequential)
+      transfer             INS-ATK-9902          20.00 x3  signed=True  (sequential)
+      concurrent_transfer  INS-ATK-9903          50.00 x6  signed=True  (concurrent)
+      unsigned_transfer    INS-ATK-9904          30.00 x1  signed=False (sequential)
+
+------------------------------------------------------------------------------
+  [开靶场] vulnerable 臂
+------------------------------------------------------------------------------
+      监听地址   : http://127.0.0.1:18080（按计划端口 18080）
+      缺失控制   : Idempotency_Token, Signature_Verification
+  [1] 侦察：先看看靶场里有什么（攻击者视角）
+      health     : status=ok mode=vulnerable
+      controls   : none
+      初始余额   : ACC-SYNTH-0001=1000.00  ACC-SYNTH-0002=0.00
+      初始分录   : 0 条
+
+  [2] 基线：一笔正常指令，证明正常路径本身是好的
+      INS-ATK-9901 -> 200 accepted=True  posted=PST-0001 replayed=False receipt=RCP-0001 error=-
+
+  [3] 攻击 A · 重放：同一指令 INS-ATK-9902 连发 3 次（客户端超时重发）
+      #1 200 accepted=True  posted=PST-0002 replayed=False receipt=RCP-0002 error=-
+      #2 200 accepted=True  posted=PST-0003 replayed=False receipt=RCP-0003 error=-
+      #3 200 accepted=True  posted=PST-0004 replayed=False receipt=RCP-0004 error=-
+
+  [4] 攻击 B · 并发风暴：6 个线程同时释放 INS-ATK-9903（双击 / 网关重试）
+      6 个请求在 28 ms 内返回，其中落账 6 笔
+      线程 #1 200 accepted=True  posted=PST-0007 replayed=False receipt=RCP-0007 error=-
+      线程 #2 200 accepted=True  posted=PST-0005 replayed=False receipt=RCP-0005 error=-
+      线程 #3 200 accepted=True  posted=PST-0008 replayed=False receipt=RCP-0008 error=-
+      线程 #4 200 accepted=True  posted=PST-0009 replayed=False receipt=RCP-0009 error=-
+      线程 #5 200 accepted=True  posted=PST-0006 replayed=False receipt=RCP-0006 error=-
+      线程 #6 200 accepted=True  posted=PST-0010 replayed=False receipt=RCP-0010 error=-
+
+  [5] 攻击 C · 无签名：不发 X-Lab-Signature 头，直接提交 INS-ATK-9904
+      INS-ATK-9904 -> 200 accepted=True  posted=PST-0011 replayed=False receipt=RCP-0011 error=-
+
+  [6] 攻击后对账：余额 ACC-SYNTH-0001=600.00  ACC-SYNTH-0002=400.00
+      分录 11 条，重复指令 ['INS-ATK-9902', 'INS-ATK-9903']
+        PST-0001 ACC-SYNTH-0001 -> ACC-SYNTH-0002  10.00  (instruction INS-ATK-9901, receipt RCP-0001)
+        PST-0002 ACC-SYNTH-0001 -> ACC-SYNTH-0002  20.00  (instruction INS-ATK-9902, receipt RCP-0002)
+        PST-0003 ACC-SYNTH-0001 -> ACC-SYNTH-0002  20.00  (instruction INS-ATK-9902, receipt RCP-0003)
+        PST-0004 ACC-SYNTH-0001 -> ACC-SYNTH-0002  20.00  (instruction INS-ATK-9902, receipt RCP-0004)
+        PST-0005 ACC-SYNTH-0001 -> ACC-SYNTH-0002  50.00  (instruction INS-ATK-9903, receipt RCP-0005)
+        PST-0006 ACC-SYNTH-0001 -> ACC-SYNTH-0002  50.00  (instruction INS-ATK-9903, receipt RCP-0006)
+        PST-0007 ACC-SYNTH-0001 -> ACC-SYNTH-0002  50.00  (instruction INS-ATK-9903, receipt RCP-0007)
+        PST-0008 ACC-SYNTH-0001 -> ACC-SYNTH-0002  50.00  (instruction INS-ATK-9903, receipt RCP-0008)
+        PST-0009 ACC-SYNTH-0001 -> ACC-SYNTH-0002  50.00  (instruction INS-ATK-9903, receipt RCP-0009)
+        PST-0010 ACC-SYNTH-0001 -> ACC-SYNTH-0002  50.00  (instruction INS-ATK-9903, receipt RCP-0010)
+        PST-0011 ACC-SYNTH-0001 -> ACC-SYNTH-0002  30.00  (instruction INS-ATK-9904, receipt RCP-0011)
+
+  [7] 判定（复用阶段 10 的 classify_logic_risk，没有第二套评分）
+  attack_demo            vulnerable observed=critical predicted=critical PASS  (11 request(s))
+    missing controls : Idempotency_Token, Signature_Verification
+    finding          : 检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Duplicate_Debit 风险，违反 Financial_Security_Level_3，建议增加唯一请求 ID 校验。
+    finding          : 检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Race_Condition 风险，违反 JR_T_0185_API_Spec，建议增加唯一请求 ID 校验。
+    finding          : 检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Replay_Attack 风险，违反 Financial_Security_Level_3，建议增加唯一请求 ID 校验。
+    finding          : 检测到 Transfer_API 缺失 Signature_Verification，推导出存在 Unsigned_Instruction_Accepted 风险，违反 未映射的合规条款，建议补齐签名校验。
+    evidence         : 指令 INS-ATK-9902 产生 3 条分录：PST-0002 记 20.00（回执 RCP-0002）; PST-0003 记 20.00（回执 RCP-0003）; PST-0004 记 20.00（回执 RCP-0004）
+    evidence         : 指令 INS-ATK-9903 产生 6 条分录：PST-0005 记 50.00（回执 RCP-0005）; PST-0006 记 50.00（回执 RCP-0006）; PST-0007 记 50.00（回执 RCP-0007）; PST-0008 记 50.00（回执 RCP-0008）; PST-0009 记 50.00（回执 RCP-0009）; PST-0010 记 50.00（回执 RCP-0010）
+    evidence         : 请求 #11 未携带签名头仍被受理并落账
+    ontology gap     : Unsigned_Instruction_Accepted - 基准图没有对应 LEADS_TO_VULNERABILITY / 条款边，已按无条款档计分
+      检测信号   : duplicate_posting x9, unsigned_accepted x1
+
+------------------------------------------------------------------------------
+  [对照] 同一套攻击，打在 secure 臂上
+------------------------------------------------------------------------------
+      监听地址   : http://127.0.0.1:18081（按计划端口 18081）
+      生效控制   : Idempotency_Token, Signature_Verification
+  [1] 侦察：先看看靶场里有什么（攻击者视角）
+      health     : status=ok mode=secure
+      controls   : Idempotency_Token, Signature_Verification
+      初始余额   : ACC-SYNTH-0001=1000.00  ACC-SYNTH-0002=0.00
+      初始分录   : 0 条
+
+  [2] 基线：一笔正常指令，证明正常路径本身是好的
+      INS-ATK-9901 -> 200 accepted=True  posted=PST-0001 replayed=False receipt=RCP-0001 error=-
+
+  [3] 攻击 A · 重放：同一指令 INS-ATK-9902 连发 3 次（客户端超时重发）
+      #1 200 accepted=True  posted=PST-0002 replayed=False receipt=RCP-0002 error=-
+      #2 200 accepted=True  posted=-     replayed=True  receipt=RCP-0002 error=-
+      #3 200 accepted=True  posted=-     replayed=True  receipt=RCP-0002 error=-
+
+  [4] 攻击 B · 并发风暴：6 个线程同时释放 INS-ATK-9903（双击 / 网关重试）
+      6 个请求在 5 ms 内返回，其中落账 1 笔
+      线程 #1 200 accepted=True  posted=-     replayed=True  receipt=RCP-0003 error=-
+      线程 #2 200 accepted=True  posted=-     replayed=True  receipt=RCP-0003 error=-
+      线程 #3 200 accepted=True  posted=-     replayed=True  receipt=RCP-0003 error=-
+      线程 #4 200 accepted=True  posted=PST-0003 replayed=False receipt=RCP-0003 error=-
+      线程 #5 200 accepted=True  posted=-     replayed=True  receipt=RCP-0003 error=-
+      线程 #6 200 accepted=True  posted=-     replayed=True  receipt=RCP-0003 error=-
+
+  [5] 攻击 C · 无签名：不发 X-Lab-Signature 头，直接提交 INS-ATK-9904
+      INS-ATK-9904 -> 401 accepted=False posted=-     replayed=False receipt=-        error=signature_rejected
+
+  [6] 攻击后对账：余额 ACC-SYNTH-0001=920.00  ACC-SYNTH-0002=80.00
+      分录 3 条，重复指令 无
+        PST-0001 ACC-SYNTH-0001 -> ACC-SYNTH-0002  10.00  (instruction INS-ATK-9901, receipt RCP-0001)
+        PST-0002 ACC-SYNTH-0001 -> ACC-SYNTH-0002  20.00  (instruction INS-ATK-9902, receipt RCP-0002)
+        PST-0003 ACC-SYNTH-0001 -> ACC-SYNTH-0002  50.00  (instruction INS-ATK-9903, receipt RCP-0003)
+
+  [7] 判定（复用阶段 10 的 classify_logic_risk，没有第二套评分）
+  attack_demo            secure     observed=none     predicted=none     PASS  (11 request(s))
+    missing controls : none
+      检测信号   : idempotent_replay x7, rejected_request x1
+
+==============================================================================
+  同一套攻击，两臂的结果
+==============================================================================
+  指标                 vulnerable             secure                
+  --------------------------------------------------------------
+  分录数                11                     3                     
+  重复指令               INS-ATK-9902,INS-ATK-9903 -                     
+  无签名被接受             1                      0                     
+  判定风险               critical               none                  
+  POST 请求数           11                     11                    
+
+  自检：
+    [OK] vulnerable 出现重复分录（INS-ATK-9902,INS-ATK-9903）
+    [OK] vulnerable 接受无签名请求
+    [OK] vulnerable 判定 == 预期 critical
+    [OK] secure 没有重复分录
+    [OK] secure 拒绝无签名请求
+    [OK] secure 用回执挡住重放（2 次 replayed）
+    [OK] secure 判定 == 预期 none
+
+  证据文件：D:\fin_logic_attack_range\outputs\attack_demo.json
+
+------------------------------------------------------------------------------
+  说明
+    · 账户 ACC-SYNTH-*、金额与指令号全为合成数据，没有任何真实系统被访问；
+    · 靶场是本进程内的 mock 网关，进程退出即消失，不留监听、不留数据；
+    · 同一条攻击在 secure 臂上被 Idempotency_Token 与 Signature_Verification
+      挡住，这正是动态验证静态推演的意义：结论可以被证伪。
+  结论：PASS（7/7 自检通过）

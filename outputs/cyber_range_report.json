@@ -1,0 +1,1234 @@
+{
+  "passed": true,
+  "worst_observed": "critical",
+  "runs": [
+    {
+      "scenario": {
+        "name": "concurrent_transfer",
+        "title": "双击 / 重试风暴下同一指令并发提交",
+        "description": "同一笔指令在极短时间内被并发提交多次（双击、弱网重试、脚本误触都会造成）。缺失幂等令牌时，两个线程都读到“还没处理过”，于是都落账，余额校验也会通过两次。",
+        "process": "Fund_Transfer_Process",
+        "target_api": "Transfer_API",
+        "control": "Idempotency_Token",
+        "endpoint": "/mock/v1/transfer",
+        "expect_vulnerable": "critical",
+        "expect_secure": "none",
+        "requests": 8,
+        "steps": [
+          {
+            "action": "concurrent_transfer",
+            "instruction_id": "INS-B0000002",
+            "amount": "100.00",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "repeat": 1,
+            "workers": 8
+          }
+        ]
+      },
+      "mode": "vulnerable",
+      "base_url": "http://127.0.0.1:62398",
+      "passed": true,
+      "assessment": {
+        "scenario": "concurrent_transfer",
+        "mode": "vulnerable",
+        "target_api": "Transfer_API",
+        "process": "Fund_Transfer_Process",
+        "risk": "critical",
+        "expected": "critical",
+        "passed": true,
+        "requests": 8,
+        "controls_missing": [
+          "Idempotency_Token",
+          "Signature_Verification"
+        ],
+        "flaws": [
+          "Duplicate_Debit",
+          "Race_Condition"
+        ],
+        "ontology_gaps": [],
+        "gaps": [
+          {
+            "control": "Idempotency_Token",
+            "required": true,
+            "required_by": [
+              "Fund_Transfer_Process"
+            ],
+            "derived": [
+              "Replay_Attack",
+              "Duplicate_Debit",
+              "Race_Condition"
+            ],
+            "remediation": "增加唯一请求 ID 校验"
+          },
+          {
+            "control": "Signature_Verification",
+            "required": true,
+            "required_by": [
+              "Fund_Transfer_Process"
+            ],
+            "derived": [
+              "Unsigned_Instruction_Accepted"
+            ],
+            "remediation": "补齐签名校验"
+          }
+        ],
+        "findings": [
+          {
+            "target_api": "Transfer_API",
+            "control": "Idempotency_Token",
+            "vulnerability": "Duplicate_Debit",
+            "required_by": [
+              "Fund_Transfer_Process"
+            ],
+            "clauses": [
+              "Financial_Security_Level_3"
+            ],
+            "remediation": "增加唯一请求 ID 校验",
+            "sentence": "检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Duplicate_Debit 风险，违反 Financial_Security_Level_3，建议增加唯一请求 ID 校验。"
+          },
+          {
+            "target_api": "Transfer_API",
+            "control": "Idempotency_Token",
+            "vulnerability": "Race_Condition",
+            "required_by": [
+              "Fund_Transfer_Process"
+            ],
+            "clauses": [
+              "JR_T_0185_API_Spec"
+            ],
+            "remediation": "增加唯一请求 ID 校验",
+            "sentence": "检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Race_Condition 风险，违反 JR_T_0185_API_Spec，建议增加唯一请求 ID 校验。"
+          }
+        ],
+        "evidence": [
+          "指令 INS-B0000002 产生 8 条分录：PST-0001 记 100.00（回执 RCP-0001）; PST-0002 记 100.00（回执 RCP-0002）; PST-0003 记 100.00（回执 RCP-0003）; PST-0004 记 100.00（回执 RCP-0004）; PST-0005 记 100.00（回执 RCP-0005）; PST-0006 记 100.00（回执 RCP-0006）; PST-0007 记 100.00（回执 RCP-0007）; PST-0008 记 100.00（回执 RCP-0008）"
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        }
+      ],
+      "access": [
+        {
+          "seq": 1,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": true,
+          "duplicates_after": 0,
+          "signals": []
+        },
+        {
+          "seq": 2,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": true,
+          "duplicates_after": 1,
+          "signals": [
+            "duplicate_posting"
+          ]
+        },
+        {
+          "seq": 3,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": true,
+          "duplicates_after": 1,
+          "signals": [
+            "duplicate_posting"
+          ]
+        },
+        {
+          "seq": 4,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": true,
+          "duplicates_after": 1,
+          "signals": [
+            "duplicate_posting"
+          ]
+        },
+        {
+          "seq": 5,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": true,
+          "duplicates_after": 1,
+          "signals": [
+            "duplicate_posting"
+          ]
+        },
+        {
+          "seq": 6,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": true,
+          "duplicates_after": 1,
+          "signals": [
+            "duplicate_posting"
+          ]
+        },
+        {
+          "seq": 7,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": true,
+          "duplicates_after": 1,
+          "signals": [
+            "duplicate_posting"
+          ]
+        },
+        {
+          "seq": 8,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": true,
+          "duplicates_after": 1,
+          "signals": [
+            "duplicate_posting"
+          ]
+        }
+      ],
+      "ledger": {
+        "controls": {
+          "mode": "vulnerable",
+          "enforced": [],
+          "missing": [
+            "Idempotency_Token",
+            "Signature_Verification"
+          ]
+        },
+        "balances": {
+          "ACC-SYNTH-0001": "200.00",
+          "ACC-SYNTH-0002": "800.00"
+        },
+        "accepted_requests": 8,
+        "postings": [
+          {
+            "posting_id": "PST-0001",
+            "instruction_id": "INS-B0000002",
+            "receipt_id": "RCP-0001",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "100.00",
+            "sequence": 1
+          },
+          {
+            "posting_id": "PST-0002",
+            "instruction_id": "INS-B0000002",
+            "receipt_id": "RCP-0002",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "100.00",
+            "sequence": 2
+          },
+          {
+            "posting_id": "PST-0003",
+            "instruction_id": "INS-B0000002",
+            "receipt_id": "RCP-0003",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "100.00",
+            "sequence": 3
+          },
+          {
+            "posting_id": "PST-0004",
+            "instruction_id": "INS-B0000002",
+            "receipt_id": "RCP-0004",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "100.00",
+            "sequence": 4
+          },
+          {
+            "posting_id": "PST-0005",
+            "instruction_id": "INS-B0000002",
+            "receipt_id": "RCP-0005",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "100.00",
+            "sequence": 5
+          },
+          {
+            "posting_id": "PST-0006",
+            "instruction_id": "INS-B0000002",
+            "receipt_id": "RCP-0006",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "100.00",
+            "sequence": 6
+          },
+          {
+            "posting_id": "PST-0007",
+            "instruction_id": "INS-B0000002",
+            "receipt_id": "RCP-0007",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "100.00",
+            "sequence": 7
+          },
+          {
+            "posting_id": "PST-0008",
+            "instruction_id": "INS-B0000002",
+            "receipt_id": "RCP-0008",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "100.00",
+            "sequence": 8
+          }
+        ],
+        "duplicated_instructions": [
+          "INS-B0000002"
+        ]
+      }
+    },
+    {
+      "scenario": {
+        "name": "concurrent_transfer",
+        "title": "双击 / 重试风暴下同一指令并发提交",
+        "description": "同一笔指令在极短时间内被并发提交多次（双击、弱网重试、脚本误触都会造成）。缺失幂等令牌时，两个线程都读到“还没处理过”，于是都落账，余额校验也会通过两次。",
+        "process": "Fund_Transfer_Process",
+        "target_api": "Transfer_API",
+        "control": "Idempotency_Token",
+        "endpoint": "/mock/v1/transfer",
+        "expect_vulnerable": "critical",
+        "expect_secure": "none",
+        "requests": 8,
+        "steps": [
+          {
+            "action": "concurrent_transfer",
+            "instruction_id": "INS-B0000002",
+            "amount": "100.00",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "repeat": 1,
+            "workers": 8
+          }
+        ]
+      },
+      "mode": "secure",
+      "base_url": "http://127.0.0.1:62407",
+      "passed": true,
+      "assessment": {
+        "scenario": "concurrent_transfer",
+        "mode": "secure",
+        "target_api": "Transfer_API",
+        "process": "Fund_Transfer_Process",
+        "risk": "none",
+        "expected": "none",
+        "passed": true,
+        "requests": 8,
+        "controls_missing": [],
+        "flaws": [],
+        "ontology_gaps": [],
+        "gaps": [],
+        "findings": [],
+        "evidence": []
+      },
+      "responses": [
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        }
+      ],
+      "access": [
+        {
+          "seq": 1,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": true,
+          "duplicates_after": 0,
+          "signals": []
+        },
+        {
+          "seq": 2,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": false,
+          "replayed": true,
+          "signature_present": true,
+          "duplicates_after": 0,
+          "signals": [
+            "idempotent_replay"
+          ]
+        },
+        {
+          "seq": 3,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": false,
+          "replayed": true,
+          "signature_present": true,
+          "duplicates_after": 0,
+          "signals": [
+            "idempotent_replay"
+          ]
+        },
+        {
+          "seq": 4,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": false,
+          "replayed": true,
+          "signature_present": true,
+          "duplicates_after": 0,
+          "signals": [
+            "idempotent_replay"
+          ]
+        },
+        {
+          "seq": 5,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": false,
+          "replayed": true,
+          "signature_present": true,
+          "duplicates_after": 0,
+          "signals": [
+            "idempotent_replay"
+          ]
+        },
+        {
+          "seq": 6,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": false,
+          "replayed": true,
+          "signature_present": true,
+          "duplicates_after": 0,
+          "signals": [
+            "idempotent_replay"
+          ]
+        },
+        {
+          "seq": 7,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": false,
+          "replayed": true,
+          "signature_present": true,
+          "duplicates_after": 0,
+          "signals": [
+            "idempotent_replay"
+          ]
+        },
+        {
+          "seq": 8,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-B0000002",
+          "status": 200,
+          "accepted": true,
+          "posted": false,
+          "replayed": true,
+          "signature_present": true,
+          "duplicates_after": 0,
+          "signals": [
+            "idempotent_replay"
+          ]
+        }
+      ],
+      "ledger": {
+        "controls": {
+          "mode": "secure",
+          "enforced": [
+            "Idempotency_Token",
+            "Signature_Verification"
+          ],
+          "missing": []
+        },
+        "balances": {
+          "ACC-SYNTH-0001": "900.00",
+          "ACC-SYNTH-0002": "100.00"
+        },
+        "accepted_requests": 1,
+        "postings": [
+          {
+            "posting_id": "PST-0001",
+            "instruction_id": "INS-B0000002",
+            "receipt_id": "RCP-0001",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "100.00",
+            "sequence": 1
+          }
+        ],
+        "duplicated_instructions": []
+      }
+    },
+    {
+      "scenario": {
+        "name": "replay_transfer",
+        "title": "同一笔转账指令被原样重放两次",
+        "description": "客户端在超时后按原样重发同一笔转账指令。业务语义上这笔钱只能扣一次，但两次请求字节完全相同、都格式合法：只要服务端没有记住指令号，库上就会记两笔。",
+        "process": "Fund_Transfer_Process",
+        "target_api": "Transfer_API",
+        "control": "Idempotency_Token",
+        "endpoint": "/mock/v1/transfer",
+        "expect_vulnerable": "high",
+        "expect_secure": "none",
+        "requests": 2,
+        "steps": [
+          {
+            "action": "transfer",
+            "instruction_id": "INS-A0000001",
+            "amount": "100.00",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "repeat": 2,
+            "workers": 4
+          }
+        ]
+      },
+      "mode": "vulnerable",
+      "base_url": "http://127.0.0.1:62417",
+      "passed": true,
+      "assessment": {
+        "scenario": "replay_transfer",
+        "mode": "vulnerable",
+        "target_api": "Transfer_API",
+        "process": "Fund_Transfer_Process",
+        "risk": "high",
+        "expected": "high",
+        "passed": true,
+        "requests": 2,
+        "controls_missing": [
+          "Idempotency_Token",
+          "Signature_Verification"
+        ],
+        "flaws": [
+          "Duplicate_Debit",
+          "Replay_Attack"
+        ],
+        "ontology_gaps": [],
+        "gaps": [
+          {
+            "control": "Idempotency_Token",
+            "required": true,
+            "required_by": [
+              "Fund_Transfer_Process"
+            ],
+            "derived": [
+              "Replay_Attack",
+              "Duplicate_Debit",
+              "Race_Condition"
+            ],
+            "remediation": "增加唯一请求 ID 校验"
+          },
+          {
+            "control": "Signature_Verification",
+            "required": true,
+            "required_by": [
+              "Fund_Transfer_Process"
+            ],
+            "derived": [
+              "Unsigned_Instruction_Accepted"
+            ],
+            "remediation": "补齐签名校验"
+          }
+        ],
+        "findings": [
+          {
+            "target_api": "Transfer_API",
+            "control": "Idempotency_Token",
+            "vulnerability": "Duplicate_Debit",
+            "required_by": [
+              "Fund_Transfer_Process"
+            ],
+            "clauses": [
+              "Financial_Security_Level_3"
+            ],
+            "remediation": "增加唯一请求 ID 校验",
+            "sentence": "检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Duplicate_Debit 风险，违反 Financial_Security_Level_3，建议增加唯一请求 ID 校验。"
+          },
+          {
+            "target_api": "Transfer_API",
+            "control": "Idempotency_Token",
+            "vulnerability": "Replay_Attack",
+            "required_by": [
+              "Fund_Transfer_Process"
+            ],
+            "clauses": [
+              "Financial_Security_Level_3"
+            ],
+            "remediation": "增加唯一请求 ID 校验",
+            "sentence": "检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Replay_Attack 风险，违反 Financial_Security_Level_3，建议增加唯一请求 ID 校验。"
+          }
+        ],
+        "evidence": [
+          "指令 INS-A0000001 产生 2 条分录：PST-0001 记 100.00（回执 RCP-0001）; PST-0002 记 100.00（回执 RCP-0002）"
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        }
+      ],
+      "access": [
+        {
+          "seq": 1,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-A0000001",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": true,
+          "duplicates_after": 0,
+          "signals": []
+        },
+        {
+          "seq": 2,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-A0000001",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": true,
+          "duplicates_after": 1,
+          "signals": [
+            "duplicate_posting"
+          ]
+        }
+      ],
+      "ledger": {
+        "controls": {
+          "mode": "vulnerable",
+          "enforced": [],
+          "missing": [
+            "Idempotency_Token",
+            "Signature_Verification"
+          ]
+        },
+        "balances": {
+          "ACC-SYNTH-0001": "800.00",
+          "ACC-SYNTH-0002": "200.00"
+        },
+        "accepted_requests": 2,
+        "postings": [
+          {
+            "posting_id": "PST-0001",
+            "instruction_id": "INS-A0000001",
+            "receipt_id": "RCP-0001",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "100.00",
+            "sequence": 1
+          },
+          {
+            "posting_id": "PST-0002",
+            "instruction_id": "INS-A0000001",
+            "receipt_id": "RCP-0002",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "100.00",
+            "sequence": 2
+          }
+        ],
+        "duplicated_instructions": [
+          "INS-A0000001"
+        ]
+      }
+    },
+    {
+      "scenario": {
+        "name": "replay_transfer",
+        "title": "同一笔转账指令被原样重放两次",
+        "description": "客户端在超时后按原样重发同一笔转账指令。业务语义上这笔钱只能扣一次，但两次请求字节完全相同、都格式合法：只要服务端没有记住指令号，库上就会记两笔。",
+        "process": "Fund_Transfer_Process",
+        "target_api": "Transfer_API",
+        "control": "Idempotency_Token",
+        "endpoint": "/mock/v1/transfer",
+        "expect_vulnerable": "high",
+        "expect_secure": "none",
+        "requests": 2,
+        "steps": [
+          {
+            "action": "transfer",
+            "instruction_id": "INS-A0000001",
+            "amount": "100.00",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "repeat": 2,
+            "workers": 4
+          }
+        ]
+      },
+      "mode": "secure",
+      "base_url": "http://127.0.0.1:62421",
+      "passed": true,
+      "assessment": {
+        "scenario": "replay_transfer",
+        "mode": "secure",
+        "target_api": "Transfer_API",
+        "process": "Fund_Transfer_Process",
+        "risk": "none",
+        "expected": "none",
+        "passed": true,
+        "requests": 2,
+        "controls_missing": [],
+        "flaws": [],
+        "ontology_gaps": [],
+        "gaps": [],
+        "findings": [],
+        "evidence": []
+      },
+      "responses": [
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        },
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        }
+      ],
+      "access": [
+        {
+          "seq": 1,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-A0000001",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": true,
+          "duplicates_after": 0,
+          "signals": []
+        },
+        {
+          "seq": 2,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-A0000001",
+          "status": 200,
+          "accepted": true,
+          "posted": false,
+          "replayed": true,
+          "signature_present": true,
+          "duplicates_after": 0,
+          "signals": [
+            "idempotent_replay"
+          ]
+        }
+      ],
+      "ledger": {
+        "controls": {
+          "mode": "secure",
+          "enforced": [
+            "Idempotency_Token",
+            "Signature_Verification"
+          ],
+          "missing": []
+        },
+        "balances": {
+          "ACC-SYNTH-0001": "900.00",
+          "ACC-SYNTH-0002": "100.00"
+        },
+        "accepted_requests": 1,
+        "postings": [
+          {
+            "posting_id": "PST-0001",
+            "instruction_id": "INS-A0000001",
+            "receipt_id": "RCP-0001",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "100.00",
+            "sequence": 1
+          }
+        ],
+        "duplicated_instructions": []
+      }
+    },
+    {
+      "scenario": {
+        "name": "unsigned_transfer",
+        "title": "缺少签名头的转账请求仍被受理",
+        "description": "请求连签名头都没带，服务端也没有校验签名就直接受理并落账。这条剧本用来验证第二个控制：它对金额、并发都不敏感，只问“一个字段都没签的报文能不能把账划走”。",
+        "process": "Fund_Transfer_Process",
+        "target_api": "Transfer_API",
+        "control": "Signature_Verification",
+        "endpoint": "/mock/v1/transfer",
+        "expect_vulnerable": "medium",
+        "expect_secure": "none",
+        "requests": 1,
+        "steps": [
+          {
+            "action": "unsigned_transfer",
+            "instruction_id": "INS-C0000003",
+            "amount": "50.00",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "repeat": 1,
+            "workers": 4
+          }
+        ]
+      },
+      "mode": "vulnerable",
+      "base_url": "http://127.0.0.1:62425",
+      "passed": true,
+      "assessment": {
+        "scenario": "unsigned_transfer",
+        "mode": "vulnerable",
+        "target_api": "Transfer_API",
+        "process": "Fund_Transfer_Process",
+        "risk": "medium",
+        "expected": "medium",
+        "passed": true,
+        "requests": 1,
+        "controls_missing": [
+          "Idempotency_Token",
+          "Signature_Verification"
+        ],
+        "flaws": [
+          "Unsigned_Instruction_Accepted"
+        ],
+        "ontology_gaps": [
+          "Unsigned_Instruction_Accepted"
+        ],
+        "gaps": [
+          {
+            "control": "Idempotency_Token",
+            "required": true,
+            "required_by": [
+              "Fund_Transfer_Process"
+            ],
+            "derived": [
+              "Replay_Attack",
+              "Duplicate_Debit",
+              "Race_Condition"
+            ],
+            "remediation": "增加唯一请求 ID 校验"
+          },
+          {
+            "control": "Signature_Verification",
+            "required": true,
+            "required_by": [
+              "Fund_Transfer_Process"
+            ],
+            "derived": [
+              "Unsigned_Instruction_Accepted"
+            ],
+            "remediation": "补齐签名校验"
+          }
+        ],
+        "findings": [
+          {
+            "target_api": "Transfer_API",
+            "control": "Signature_Verification",
+            "vulnerability": "Unsigned_Instruction_Accepted",
+            "required_by": [
+              "Fund_Transfer_Process"
+            ],
+            "clauses": [],
+            "remediation": "补齐签名校验",
+            "sentence": "检测到 Transfer_API 缺失 Signature_Verification，推导出存在 Unsigned_Instruction_Accepted 风险，违反 未映射的合规条款，建议补齐签名校验。"
+          }
+        ],
+        "evidence": [
+          "请求 #1 未携带签名头仍被受理并落账"
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "accepted": true,
+          "error": ""
+        }
+      ],
+      "access": [
+        {
+          "seq": 1,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-C0000003",
+          "status": 200,
+          "accepted": true,
+          "posted": true,
+          "replayed": false,
+          "signature_present": false,
+          "duplicates_after": 0,
+          "signals": [
+            "unsigned_accepted"
+          ]
+        }
+      ],
+      "ledger": {
+        "controls": {
+          "mode": "vulnerable",
+          "enforced": [],
+          "missing": [
+            "Idempotency_Token",
+            "Signature_Verification"
+          ]
+        },
+        "balances": {
+          "ACC-SYNTH-0001": "950.00",
+          "ACC-SYNTH-0002": "50.00"
+        },
+        "accepted_requests": 1,
+        "postings": [
+          {
+            "posting_id": "PST-0001",
+            "instruction_id": "INS-C0000003",
+            "receipt_id": "RCP-0001",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "amount": "50.00",
+            "sequence": 1
+          }
+        ],
+        "duplicated_instructions": []
+      }
+    },
+    {
+      "scenario": {
+        "name": "unsigned_transfer",
+        "title": "缺少签名头的转账请求仍被受理",
+        "description": "请求连签名头都没带，服务端也没有校验签名就直接受理并落账。这条剧本用来验证第二个控制：它对金额、并发都不敏感，只问“一个字段都没签的报文能不能把账划走”。",
+        "process": "Fund_Transfer_Process",
+        "target_api": "Transfer_API",
+        "control": "Signature_Verification",
+        "endpoint": "/mock/v1/transfer",
+        "expect_vulnerable": "medium",
+        "expect_secure": "none",
+        "requests": 1,
+        "steps": [
+          {
+            "action": "unsigned_transfer",
+            "instruction_id": "INS-C0000003",
+            "amount": "50.00",
+            "debit_account": "ACC-SYNTH-0001",
+            "credit_account": "ACC-SYNTH-0002",
+            "repeat": 1,
+            "workers": 4
+          }
+        ]
+      },
+      "mode": "secure",
+      "base_url": "http://127.0.0.1:62427",
+      "passed": true,
+      "assessment": {
+        "scenario": "unsigned_transfer",
+        "mode": "secure",
+        "target_api": "Transfer_API",
+        "process": "Fund_Transfer_Process",
+        "risk": "none",
+        "expected": "none",
+        "passed": true,
+        "requests": 1,
+        "controls_missing": [],
+        "flaws": [],
+        "ontology_gaps": [],
+        "gaps": [],
+        "findings": [],
+        "evidence": []
+      },
+      "responses": [
+        {
+          "status": 401,
+          "accepted": false,
+          "error": ""
+        }
+      ],
+      "access": [
+        {
+          "seq": 1,
+          "method": "POST",
+          "path": "/mock/v1/transfer",
+          "instruction_id": "INS-C0000003",
+          "status": 401,
+          "accepted": false,
+          "posted": false,
+          "replayed": false,
+          "signature_present": false,
+          "duplicates_after": 0,
+          "signals": [
+            "rejected_request"
+          ]
+        }
+      ],
+      "ledger": {
+        "controls": {
+          "mode": "secure",
+          "enforced": [
+            "Idempotency_Token",
+            "Signature_Verification"
+          ],
+          "missing": []
+        },
+        "balances": {
+          "ACC-SYNTH-0001": "1000.00",
+          "ACC-SYNTH-0002": "0.00"
+        },
+        "accepted_requests": 0,
+        "postings": [],
+        "duplicated_instructions": []
+      }
+    }
+  ],
+  "static": {
+    "target_api": "Transfer_API",
+    "risk": "critical",
+    "processes": [
+      "Fund_Transfer_Process"
+    ],
+    "missing_controls": [
+      "Idempotency_Token"
+    ],
+    "satisfied": [
+      "Signature_Verification"
+    ],
+    "vulnerabilities": [
+      "Duplicate_Debit",
+      "Race_Condition",
+      "Replay_Attack"
+    ],
+    "clauses": [
+      "Financial_Security_Level_3",
+      "JR_T_0185_API_Spec"
+    ],
+    "next_steps": [
+      "增加唯一请求 ID 校验"
+    ],
+    "total_nodes": 9,
+    "gaps": [
+      {
+        "control": "Idempotency_Token",
+        "required": true,
+        "required_by": [
+          "Fund_Transfer_Process"
+        ],
+        "derived": [
+          "Duplicate_Debit",
+          "Race_Condition",
+          "Replay_Attack"
+        ],
+        "remediation": "增加唯一请求 ID 校验"
+      }
+    ],
+    "findings": [
+      {
+        "target_api": "Transfer_API",
+        "control": "Idempotency_Token",
+        "vulnerability": "Duplicate_Debit",
+        "required_by": [
+          "Fund_Transfer_Process"
+        ],
+        "clauses": [
+          "Financial_Security_Level_3"
+        ],
+        "remediation": "增加唯一请求 ID 校验",
+        "sentence": "检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Duplicate_Debit 风险，违反 Financial_Security_Level_3，建议增加唯一请求 ID 校验。"
+      },
+      {
+        "target_api": "Transfer_API",
+        "control": "Idempotency_Token",
+        "vulnerability": "Race_Condition",
+        "required_by": [
+          "Fund_Transfer_Process"
+        ],
+        "clauses": [
+          "JR_T_0185_API_Spec"
+        ],
+        "remediation": "增加唯一请求 ID 校验",
+        "sentence": "检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Race_Condition 风险，违反 JR_T_0185_API_Spec，建议增加唯一请求 ID 校验。"
+      },
+      {
+        "target_api": "Transfer_API",
+        "control": "Idempotency_Token",
+        "vulnerability": "Replay_Attack",
+        "required_by": [
+          "Fund_Transfer_Process"
+        ],
+        "clauses": [
+          "Financial_Security_Level_3"
+        ],
+        "remediation": "增加唯一请求 ID 校验",
+        "sentence": "检测到 Transfer_API 缺失 Idempotency_Token，推导出存在 Replay_Attack 风险，违反 Financial_Security_Level_3，建议增加唯一请求 ID 校验。"
+      }
+    ]
+  },
+  "static_pairs": [
+    [
+      "Idempotency_Token",
+      "Duplicate_Debit"
+    ],
+    [
+      "Idempotency_Token",
+      "Race_Condition"
+    ],
+    [
+      "Idempotency_Token",
+      "Replay_Attack"
+    ]
+  ],
+  "dynamic_pairs": [
+    [
+      "Idempotency_Token",
+      "Duplicate_Debit"
+    ],
+    [
+      "Idempotency_Token",
+      "Race_Condition"
+    ],
+    [
+      "Idempotency_Token",
+      "Replay_Attack"
+    ],
+    [
+      "Signature_Verification",
+      "Unsigned_Instruction_Accepted"
+    ]
+  ]
+}
